@@ -1,0 +1,123 @@
+---
+title: "EDA"
+author: "Anna Hyunjung Kim"
+date: "2026-04-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+adult <- read.csv("adult/adult.data", header = FALSE, strip.white = TRUE)
+
+head(adult, 1)
+```
+```{r}
+colnames(adult) <- c(
+  "age","workclass","fnlwgt","education","education_num",
+  "marital_status","occupation","relationship","race","sex",
+  "capital_gain","capital_loss","hours_per_week",
+  "native_country","income"
+)
+
+head(adult,3)
+```
+
+```{r}
+str(adult)
+```
+
+
+```{r}
+summary(adult)
+```
+
+
+```{r}
+dim(adult)
+```
+
+```{r}
+colSums(adult == "?")
+```
+```{r}
+adult$workclass <- as.factor(adult$workclass)
+adult$education <- as.factor(adult$education)
+adult$marital_status <- as.factor(adult$marital_status)
+adult$occupation <- as.factor(adult$occupation)
+adult$relationship <- as.factor(adult$relationship)
+adult$race <- as.factor(adult$race)
+adult$sex <- as.factor(adult$sex)
+adult$native_country <- as.factor(adult$native_country)
+adult$income <- as.factor(adult$income)
+```
+
+```{r}
+table(adult$income)
+```
+
+
+```{r}
+prop.table(table(adult$income))
+```
+
+```{r}
+hist(adult$age, main="Age Distribution", xlab="Age")
+hist(adult$hours_per_week, main="Work Hours", xlab="Hours")
+```
+
+```{r}
+table(adult$education)
+barplot(table(adult$education), las=2)
+```
+
+```{r}
+table(adult$sex)
+barplot(table(adult$sex))
+```
+```{r}
+table(adult$sex, adult$income)
+prop.table(table(adult$sex, adult$income), 1)
+```
+
+```{r}
+table(adult$education, adult$income)
+```
+
+```{r}
+boxplot(age ~ income, data=adult,main="Age vs Income", horizontal = TRUE)
+```
+
+```{r}
+boxplot(hours_per_week ~ income, data=adult, main="Work Hours vs Income", horizontal = TRUE)
+```
+
+```{r}
+cor(adult[, c("age","education_num","hours_per_week")])
+```
+```{r}
+numeric_data <- adult[, c("age", "fnlwgt", "education_num",
+                         "capital_gain", "capital_loss",
+                         "hours_per_week")]
+```
+
+```{r}
+cor_matrix <- cor(numeric_data)
+```
+
+```{r}
+#install.packages("corrplot")
+```
+
+```{r}
+library(corrplot)
+
+corrplot(cor_matrix,
+         method = "color",
+         type = "upper",
+         tl.col = "black",
+         tl.srt = 45)
+```
+
