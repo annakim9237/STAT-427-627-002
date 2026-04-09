@@ -1,0 +1,1 @@
+"0","hist(adult$hours_per_week, main=""Work Hours"", xlab=""Hours"")"
