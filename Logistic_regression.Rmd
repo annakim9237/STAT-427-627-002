@@ -1,0 +1,187 @@
+---
+title: "Logistic_Regression"
+author: "Anna Hyunjung Kim"
+date: "2026-04-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+student <- read.csv("./student/student-por.csv", header = TRUE, sep = ";")
+head(student, 2)
+```
+```{r}
+student <- student[, !(names(student) %in% c("G1", "G2"))]
+head(student, 2)
+```
+```{r}
+table(student$G3)
+```
+
+```{r}
+student[sapply(student, is.character)] <- lapply(student[sapply(student, is.character)], as.factor)
+head(student,2)
+```
+
+## Target as Pass or Fail. The pass point is 10.
+```{r}
+student$pass <- ifelse(student$G3 >= 10, 1, 0)
+student$pass <- as.factor(student$pass)
+```
+
+## Logistic Regression
+```{r}
+set.seed(321)
+train_idx <- sample(1:nrow(student), 0.7*nrow(student))
+
+train <- student[train_idx, ]
+test <- student[-train_idx, ]
+```
+
+```{r}
+# start from full
+full_log <- glm(pass ~ . - G3, data = train, family = "binomial")
+summary(full_log)
+```
+```{r}
+null_log <- glm(pass ~ 1, data = train, family = "binomial")
+
+step_log <- step(null_log,
+                 scope = list(lower = null_log, upper = full_log),
+                 direction = "both",
+                 trace = FALSE) #- It's too long to show
+
+summary(step_log)
+```
+The logistic regression results indicate that several variables are significant predictors of student performance. 
+
+In particular, the number of past failures has a strong negative effect on the probability of passing, suggesting that students with previous academic difficulties are less likely to succeed. Similarly, absences also have a negative impact, indicating that increased absenteeism reduces the likelihood of passing.
+
+School type is also significant, with students from MS schools having a lower probability of passing compared to the reference group. In contrast, students who intend to pursue higher education are significantly more likely to pass, reflecting stronger academic motivation.
+
+Gender also appears to play a role, with male students having a lower probability of passing compared to female students. Additionally, students receiving paid classes show a lower probability of passing, which may reflect underlying academic difficulties rather than the direct effect of tutoring.
+
+Some variables, such as father's education (Fedu), are not statistically significant at the 5% level but may still contribute to the overall model based on AIC selection.
+
+## cross validation 
+```{r}
+library(boot)
+```
+
+
+```{r}
+cv_error <- cv.glm(train, step_log, K = 5)
+cv_error$delta
+```
+
+```{r}
+cv_error10 <- cv.glm(train, step_log, K = 10)
+cv_error10$delta
+```
+
+The cross-validation results show that the model achieves approximately 90% accuracy. The 10-fold cross-validation yields slightly lower error than the 5-fold, indicating more stable performance.
+
+```{r}
+log_prob <- predict(step_log, test, type = "response")
+log_pred <- ifelse(log_prob > 0.5, 1, 0)
+log_pred <- as.factor(log_pred)
+
+mean(log_pred != test$pass)   # error rate
+mean(log_pred == test$pass)   # classification rate
+```
+
+```{r}
+table(test$pass, log_pred)
+```
+
+```{r}
+table(Actual = test$pass, Predicted = log_pred)
+```
+# Same process Using a cutoff of 12
+
+
+### Target as Pass or Fail. The pass point is 12.
+```{r}
+student$pass <- ifelse(student$G3 >= 12, 1, 0)
+student$pass <- as.factor(student$pass)
+table(student$pass)
+```
+
+
+### Logistic Regression
+```{r}
+set.seed(321)
+train_idx <- sample(1:nrow(student), 0.7 * nrow(student))
+
+train <- student[train_idx, ]
+test <- student[-train_idx, ]
+```
+
+
+```{r}
+# Full logistic regression model
+full_log <- glm(pass ~ . - G3, data = train, family = "binomial")
+summary(full_log)
+```
+
+
+```{r}
+# Stepwise logistic regression
+null_log <- glm(pass ~ 1, data = train, family = "binomial")
+
+step_log <- step(null_log,
+                 scope = list(lower = null_log, upper = full_log),
+                 direction = "both",
+                 trace = FALSE)
+
+summary(step_log)
+```
+
+Some variables with marginal significance (p-value between 0.05 and 0.1) are still included in the model because stepwise selection is based on AIC rather than individual p-values. These variables may contribute to improving overall model fit.
+
+### Cross validation
+```{r}
+library(boot)
+cv_error <- cv.glm(train, step_log, K = 5)
+cv_error$delta
+cv_error10 <- cv.glm(train, step_log, K = 10)
+cv_error10$delta
+```
+
+The cross-validation results show that the prediction error is approximately 16.5%, 
+corresponding to an accuracy of about 83.5%. 
+
+The results from 5-fold and 10-fold cross-validation are very similar, 
+indicating that the model performance is stable.
+
+
+### Prediction on test set
+```{r}
+log_prob <- predict(step_log, test, type = "response")
+summary(log_prob)
+```
+
+
+```{r}
+log_pred <- ifelse(log_prob > 0.5, 1, 0)
+
+actual <- factor(test$pass, levels = c(0, 1))
+pred <- factor(log_pred, levels = c(0, 1))
+
+mean(pred != actual)   # error rate
+mean(pred == actual)   # classification
+```
+
+
+```{r}
+table(Actual = actual, Predicted = pred)
+```
+
+### Threshold comparison
+```{r}
+mean(ifelse(log_prob > 0.3, 1, 0) != as.numeric(as.character(test$pass)))
+mean(ifelse(log_prob > 0.7, 1, 0) != as.numeric(as.character(test$pass)))
+```
