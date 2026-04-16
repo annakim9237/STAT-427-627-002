@@ -1,0 +1,280 @@
+---
+title: "Final_Project_EDA"
+author: "Anna Hyunjung Kim"
+date: "2026-04-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+
+```{r}
+student <- read.csv("./student/student-por.csv", header = TRUE, sep = ";")
+```
+# Variables Table
+
+## Student Performance Dataset (UCI) – Variable Description
+
+Dataset: Student Performance Dataset (https://archive.ics.uci.edu/dataset/320/student+performance)
+
+This dataset contains information about secondary school students, including demographic characteristics, family background, academic behavior, and social factors. It is commonly used to analyze and predict student academic performance.
+
+
+---
+
+### Target Variable
+
+| Variable | Description |
+|----------|-------------|
+| G3 | Final grade (0–20)|
+| G2 | Second period grade |
+| G1 | First period grade |
+
+
+---
+
+### Demographic Variables
+
+| Variable | Description |
+|----------|-------------|
+| school | School attended (GP: Gabriel Pereira, MS: Mousinho da Silveira) |
+| sex | Student’s sex (F: female, M: male) |
+| age | Student’s age (15–22) |
+| address | Home address type (U: urban, R: rural) |
+| famsize | Family size (LE3: ≤3 members, GT3: >3 members) |
+| Pstatus | Parent cohabitation status (T: together, A: apart) |
+
+---
+
+### Family Background
+
+| Variable | Description |
+|----------|-------------|
+| Medu | Mother’s education level (0–4) |
+| Fedu | Father’s education level (0–4) |
+| Mjob | Mother’s job |
+| Fjob | Father’s job |
+| guardian | Student’s guardian (mother, father, or other) |
+| famsup | Family educational support (yes/no) |
+
+---
+
+### School and Study-related Variables
+
+| Variable | Description |
+|----------|-------------|
+| traveltime | Travel time to school (1: <15 min, 4: >1 hour) |
+| studytime | Weekly study time (1: <2 hours, 4: >10 hours) |
+| failures | Number of past class failures |
+| schoolsup | Extra educational support from school (yes/no) |
+| paid | Extra paid classes (yes/no) |
+| activities | Participation in extracurricular activities (yes/no) |
+| nursery | Attended nursery school (yes/no) |
+| higher | Intention to pursue higher education (yes/no) |
+
+---
+
+### Social and Lifestyle Variables
+
+| Variable | Description |
+|----------|-------------|
+| internet | Internet access at home (yes/no) |
+| romantic | In a romantic relationship (yes/no) |
+| famrel | Quality of family relationships (1–5) |
+| freetime | Free time after school (1–5) |
+| goout | Going out with friends (1–5) |
+| Dalc | Workday alcohol consumption (1–5) |
+| Walc | Weekend alcohol consumption (1–5) |
+| health | Current health status (1–5) |
+
+---
+
+# Exploratory Data Analysis (EDA)
+
+```{r}
+colSums(is.na(student))
+```
+
+
+```{r}
+head(student)
+```
+
+
+```{r}
+str(student)
+```
+
+```{r}
+dim(student)
+```
+
+### Distribution of Target Variables
+```{r}
+par(mfrow = c(1, 3))
+
+hist(student$G1, main = "Distribution of Final Grade (G1)", xlab = "G1")
+hist(student$G2, main = "Distribution of Final Grade (G2)", xlab = "G2")    
+hist(student$G3, main = "Distribution of Final Grade (G3)", xlab = "G3")
+```
+
+```{r}
+boxplot(student$G3, horizontal = TRUE)
+```
+
+The pattern of G1, G2, and G3 look similar. So, we need to check the correlation. 
+
+### Relationship Between G1, G2, and G3
+
+```{r}
+plot(student$G1, student$G3, main = "G1 vs G3", xlab = "G1", ylab = "G3")
+plot(student$G2, student$G3, main = "G2 vs G3", xlab = "G2", ylab = "G3")
+```
+
+```{r}
+cor(student$G1, student$G3)
+cor(student$G2, student$G3)
+```
+
+The correlations are very high (0.83 and 0.92), indicating a strong linear relationship. Therefore, G3 is sufficient as the final outcome variable.
+
+### Demographic Variables
+
+```{r}
+library(ggplot2)
+library(gridExtra)
+```
+
+
+```{r}
+p1 <- ggplot(student, aes(x = school, y = G3)) + geom_boxplot() + ggtitle("School")
+p2 <- ggplot(student, aes(x = sex, y = G3)) + geom_boxplot() + ggtitle("Sex")
+p3 <- ggplot(student, aes(x = factor(age), y = G3)) + geom_boxplot() + ggtitle("Age")
+p4 <- ggplot(student, aes(x = address, y = G3)) + geom_boxplot() + ggtitle("Address")
+p5 <- ggplot(student, aes(x = famsize, y = G3)) + geom_boxplot() + ggtitle("Family Size")
+p6 <- ggplot(student, aes(x = Pstatus, y = G3)) + geom_boxplot() + ggtitle("Parent Status")
+
+grid.arrange(p1, p2, p3, p4, p5, p6, ncol = 3)
+```
+
+- School: GP students score slightly higher than MS students.
+- Sex: Female and male students have similar grades. Not a big difference.
+- Age: Younger students (15–16) tend to score higher. Older students do worse.
+- Address: Urban students score a little higher than rural students.
+- Family Size & Parent Status: Almost no difference. These may not be important predictors.
+
+### Family Background
+```{r}
+p1 <- ggplot(student, aes(x = factor(Medu), y = G3)) + geom_boxplot() + ggtitle("Mother's Education")
+p2 <- ggplot(student, aes(x = factor(Fedu), y = G3)) + geom_boxplot() + ggtitle("Father's Education")
+p3 <- ggplot(student, aes(x = Mjob, y = G3)) + geom_boxplot() + ggtitle("Mother's Job") + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p4 <- ggplot(student, aes(x = Fjob, y = G3)) + geom_boxplot() + ggtitle("Father's Job") + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p5 <- ggplot(student, aes(x = guardian, y = G3)) + geom_boxplot() + ggtitle("Guardian")
+p6 <- ggplot(student, aes(x = famsup, y = G3)) + geom_boxplot() + ggtitle("Family Support")
+
+grid.arrange(p1, p2, p3, p4, p5, p6, ncol = 3)
+```
+
+- Mother's & Father's Education: Higher parental education -> higher student grades. Clear trend!
+- Mother's Job: Students whose mothers work in health or teaching score higher.
+- Father's Job: Similar pattern. Teacher/health jobs -> better grades.
+- Guardian: Not much difference between mother, father, or other.
+- Family Support: Interestingly, students without family support score slightly higher. Maybe those students are more independent.
+
+
+
+### School and Study-related Variables
+
+```{r}
+p1 <- ggplot(student, aes(x = factor(traveltime), y = G3)) + geom_boxplot() + ggtitle("Travel Time")
+p2 <- ggplot(student, aes(x = factor(studytime), y = G3)) + geom_boxplot() + ggtitle("Study Time")
+p3 <- ggplot(student, aes(x = factor(failures), y = G3)) + geom_boxplot() + ggtitle("Failures")
+p4 <- ggplot(student, aes(x = schoolsup, y = G3)) + geom_boxplot() + ggtitle("School Support")
+p5 <- ggplot(student, aes(x = paid, y = G3)) + geom_boxplot() + ggtitle("Paid Classes")
+p6 <- ggplot(student, aes(x = activities, y = G3)) + geom_boxplot() + ggtitle("Activities") 
+
+grid.arrange(p1, p2, p3, p4, p5, p6, ncol = 3)
+```
+
+```{r}
+p7 <- ggplot(student, aes(x = nursery, y = G3)) + geom_boxplot() + ggtitle("Nursery")
+p8 <- ggplot(student, aes(x = higher, y = G3)) + geom_boxplot() + ggtitle("Higher Education")
+grid.arrange(p7, p8, ncol = 2)
+```
+- Study Time: More study time -> higher grades. Makes sense!
+- Failures: Students with more past failures score much lower. This is a very strong predictor.
+- School Support: Students with school support score lower — maybe because struggling students get support.
+- Paid Classes: Little difference.
+- Activities: Little difference.
+- Higher Education (goal): Students who want to go to university score much higher. Big difference!
+
+
+### Social and Lifestyle Variables
+
+```{r}
+p1 <- ggplot(student, aes(x = internet, y = G3)) + geom_boxplot() + ggtitle("Internet")
+p2 <- ggplot(student, aes(x = romantic, y = G3)) + geom_boxplot() + ggtitle("Romantic")
+p3 <- ggplot(student, aes(x = factor(famrel), y = G3)) + geom_boxplot() + ggtitle("Family Relationship")
+p4 <- ggplot(student, aes(x = factor(freetime), y = G3)) + geom_boxplot() + ggtitle("Free Time")
+p5 <- ggplot(student, aes(x = factor(goout), y = G3)) + geom_boxplot() + ggtitle("Going Out")
+p6 <- ggplot(student, aes(x = factor(Dalc), y = G3)) + geom_boxplot() + ggtitle("Workday Alcohol")
+
+grid.arrange(p1, p2, p3, p4, p5, p6, ncol = 3)
+```
+
+
+```{r}
+p7 <- ggplot(student, aes(x = factor(Walc), y = G3)) + geom_boxplot() + ggtitle("Weekend Alcohol")
+p8 <- ggplot(student, aes(x = factor(health), y = G3)) + geom_boxplot() + ggtitle("Health")
+
+grid.arrange(p7, p8, ncol = 2)
+```
+
+- Internet: Students with internet access score slightly higher.
+- Romantic: Little difference.
+- Family Relationship: Not a strong trend.
+- Free Time & Going Out: More free time or going out -> slightly lower grades, but not dramatic.
+- Workday & Weekend Alcohol: Higher alcohol use -> slightly lower grades. Weak but noticeable trend.
+- Health: No clear pattern. Health does not seem to predict grades well.
+
+## numeric variables correlation
+
+```{r}
+num_vars <- student[, c("G1","G2","G3","studytime","failures","absences","famrel","freetime","goout","Dalc","Walc","health")]
+cor_matrix <- cor(num_vars)
+cor_matrix
+```
+```{r}
+library(corrplot)
+```
+
+
+```{r}
+#install.packages("ggcorrplot")
+library(ggcorrplot)
+
+ggcorrplot(cor_matrix, lab = TRUE, lab_size = 3)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
