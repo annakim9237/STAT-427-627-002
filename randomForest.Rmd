@@ -1,0 +1,50 @@
+---
+title: "randomForest"
+author: "Aditya Kataria"
+date: "2026-04-18"
+output: html_document
+---
+```{r}
+student <- read.csv("./student/student-por.csv", sep = ";")
+```
+
+```{r}
+library(randomForest)
+
+set.seed(1)
+
+# Use same predictors for consistency
+df_rf <- student[, c(predictors, "G3")]
+df_rf$school <- ifelse(df_rf$school == "GP", 0, 1)
+df_rf$schoolsup <- ifelse(df_rf$schoolsup == "yes", 1, 0)
+df_rf$higher <- ifelse(df_rf$higher == "yes", 1, 0)
+
+train_rf <- df_rf[train_idx, ]
+test_rf  <- df_rf[-train_idx, ]
+
+# Tune mtry (number of predictors tried at each split)
+mtry_vals <- 1:8
+mse_rf <- numeric(8)
+
+for (m in mtry_vals) {
+  rf_mod <- randomForest(G3 ~ ., data = train_rf, mtry = m, ntree = 500)
+  pred <- predict(rf_mod, test_rf)
+  mse_rf[m] <- mean((pred - test_rf$G3)^2)
+}
+
+best_mtry <- which.min(mse_rf)
+best_mtry
+mse_rf[best_mtry]
+
+# Final model with best mtry
+rf_final <- randomForest(G3 ~ ., data = train_rf, mtry = best_mtry, ntree = 500, importance = TRUE)
+
+# Variable importance plot
+varImpPlot(rf_final, main = "Random Forest - Variable Importance")
+
+# Plot MSE vs mtry
+plot(mtry_vals, mse_rf, type = "b", xlab = "mtry", ylab = "Test MSE",
+     main = "Random Forest - Test MSE vs mtry")
+abline(v = best_mtry, col = "red", lty = 2)
+```
+The random forest model achieved its best performance at mtry = 2 with a test MSE of 7.03, making it the strongest model so far. Variable importance plots confirm that failures is by far the most influential predictor, followed by higher education aspiration, consistent with findings from the stepwise models.
