@@ -14,11 +14,15 @@ library(randomForest)
 set.seed(1)
 
 # Use same predictors for consistency
+predictors <- c("school", "Fedu", "studytime", "failures", "schoolsup", 
+                "higher", "Dalc", "health")
+
 df_rf <- student[, c(predictors, "G3")]
 df_rf$school <- ifelse(df_rf$school == "GP", 0, 1)
 df_rf$schoolsup <- ifelse(df_rf$schoolsup == "yes", 1, 0)
 df_rf$higher <- ifelse(df_rf$higher == "yes", 1, 0)
 
+train_idx <- sample(1:nrow(df_rf), 0.8 * nrow(df_rf))
 train_rf <- df_rf[train_idx, ]
 test_rf  <- df_rf[-train_idx, ]
 
