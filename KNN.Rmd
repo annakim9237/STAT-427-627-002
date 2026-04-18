@@ -1,0 +1,68 @@
+---
+title: "KNN"
+author: "Aditya Kataria"
+date: "2026-04-18"
+output: html_document
+---
+
+```{r}
+student <- read.csv("./student/student-por.csv", sep = ";")
+```
+
+
+```{r}
+library(FNN)
+
+# same predictors as BIC model 
+predictors <- c("school", "Fedu", "studytime", "failures", "schoolsup", 
+                "higher", "Dalc", "health")
+
+# Encode factors as numeric
+df_knn <- student[, c(predictors, "G3")]
+df_knn$school <- ifelse(df_knn$school == "GP", 0, 1)
+df_knn$schoolsup <- ifelse(df_knn$schoolsup == "yes", 1, 0)
+df_knn$higher <- ifelse(df_knn$higher == "yes", 1, 0)
+df_knn <- na.omit(df_knn)
+
+nrow(df_knn)
+
+# Train/test split (80/20)
+set.seed(1)
+train_idx <- sample(1:nrow(df_knn), 0.8 * nrow(df_knn))
+train <- df_knn[train_idx, ]
+test  <- df_knn[-train_idx, ]
+
+train_scaled <- scale(train[, predictors])
+train_center <- attr(train_scaled, "scaled:center")
+train_scale  <- attr(train_scaled, "scaled:scale")
+
+train_X <- as.matrix(train_scaled)
+test_X  <- as.matrix(scale(test[, predictors],
+                            center = train_center,
+                            scale  = train_scale))
+train_Y <- train$G3
+test_Y  <- test$G3
+
+# Find optimal K
+K <- 1:50
+mse_vals <- numeric(50)
+for (k in K) {
+  pred <- knn.reg(train_X, test_X, train_Y, k = k)$pred
+  mse_vals[k] <- mean((pred - test_Y)^2)
+}
+
+best_k <- which.min(mse_vals)
+best_k
+mse_vals[best_k]
+
+plot(K, mse_vals, type = "b", xlab = "K", ylab = "Test MSE",
+     main = "KNN Regression - Test MSE vs K")
+abline(v = best_k, col = "red", lty = 2)
+```
+The KNN regression model with optimal K = 24 achieved a test MSE of 7.25, indicating an average prediction error of approximately 2.69 grade points on the 0–20 scale. The relatively large optimal K suggests that G3 is best predicted by smoothing across many neighbors, implying a gradual rather than abrupt relationship between the selected predictors and final Portuguese grade.
+
+
+
+
+
+
