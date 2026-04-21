@@ -1,0 +1,110 @@
+---
+title: "Lasso Regression"
+author: "Anna Hyunjung Kim"
+date: "2026-04-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(glmnet)
+```
+
+```{r}
+student <- read.csv("./student/student-por.csv", header = TRUE, sep = ";")
+head(student, 2)
+```
+
+```{r}
+student <- student[, !(names(student) %in% c("G1", "G2"))]
+head(student, 2)
+
+names(student)
+```
+```{r}
+student$pass <- ifelse(student$G3 >= 12, 1, 0)
+
+set.seed(321)
+train_index <- sample(1:nrow(student), 0.7 * nrow(student))
+train <- student[train_index, ]
+test <- student[-train_index, ]
+```
+
+The initial threshold of 10 led to a highly imbalanced dataset, causing the model to predict mostly the majority class. Therefore, the threshold was increased to 12 to achieve a more balanced class distribution and improve classification performance.
+
+```{r}
+x_train <- model.matrix(pass ~ . - G3, data = train)[, -1]
+y_train <- train$pass
+
+x_test <- model.matrix(pass ~ . - G3, data = test)[, -1]
+y_test <- test$pass
+```
+
+
+```{r}
+set.seed(321)
+cv_lasso <- cv.glmnet(x_train, y_train, family = "binomial", alpha = 1)
+plot(cv_lasso)
+```
+
+```{r}
+cv_lasso$lambda.min
+cv_lasso$lambda.1se
+```
+
+```{r}
+-log(cv_lasso$lambda.min)
+-log(cv_lasso$lambda.1se)
+```
+
+
+### cv_lasso$lambda.min
+
+```{r}
+coef(cv_lasso, s = "lambda.min")
+```
+
+
+```{r}
+lasso_prob <- predict(cv_lasso, newx = x_test, s = "lambda.min", type = "response")
+lasso_pred <- ifelse(lasso_prob > 0.5, 1, 0)
+mean(lasso_pred == y_test)
+```
+
+```{r}
+table(Predicted = lasso_pred, Actual = y_test)
+```
+
+
+### lambda.1se
+
+```{r}
+coef(cv_lasso, s = "lambda.1se")
+```
+
+
+
+```{r}
+lasso_prob_1se <- predict(cv_lasso, newx = x_test, s = "lambda.1se", type = "response")
+lasso_pred_1se <- ifelse(lasso_prob_1se > 0.5, 1, 0)
+mean(lasso_pred_1se == y_test)
+```
+
+```{r}
+table(Predicted = lasso_pred_1se, Actual = y_test)
+```
+
+```{r}
+table(y_test)
+summary(lasso_prob_1se)
+```
+
+Using the lambda.min value selected by cross-validation, the Lasso model achieved an accuracy of approximately 0.74 on the test set. 
+
+The confusion matrix shows that the model correctly classified 57 out of 90 observations in class 0 and 87 out of 105 observations in class 1. However, it misclassified 33 observations from class 0 as class 1 and 18 observations from class 1 as class 0.
+
+Overall, the model demonstrates a reasonable balance between the two classes, with slightly better performance in predicting the positive class (pass). This indicates that the model is able to distinguish between classes, although some misclassification remains.
