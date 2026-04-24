@@ -11,34 +11,40 @@ student <- read.csv("./student/student-por.csv", sep = ";")
 ```{r}
 library(randomForest)
 
-set.seed(1)
+set.seed(321)
 
 # Use same predictors for consistency
-predictors <- c("school", "Fedu", "studytime", "failures", "schoolsup", 
-                "higher", "Dalc", "health")
+predictors <- c("school", "failures", "higher", "sex", "absences",
+                "guardian", "paid", "Fedu")
 
 df_rf <- student[, c(predictors, "G3")]
-df_rf$school <- ifelse(df_rf$school == "GP", 0, 1)
-df_rf$schoolsup <- ifelse(df_rf$schoolsup == "yes", 1, 0)
-df_rf$higher <- ifelse(df_rf$higher == "yes", 1, 0)
+
+df_rf$school   <- ifelse(df_rf$school == "MS", 1, 0)
+df_rf$higher   <- ifelse(df_rf$higher == "yes", 1, 0)
+df_rf$sex      <- ifelse(df_rf$sex == "M", 1, 0)
+df_rf$paid     <- ifelse(df_rf$paid == "yes", 1, 0)
+df_rf$guardian <- ifelse(df_rf$guardian == "mother", 1,
+                  ifelse(df_rf$guardian == "other", 2, 0))
+df_rf$G3       <- ifelse(df_rf$G3 >= 10, 1, 0)
+df_rf$G3 <- as.factor(df_rf$G3)
 
 train_idx <- sample(1:nrow(df_rf), 0.8 * nrow(df_rf))
 train_rf <- df_rf[train_idx, ]
 test_rf  <- df_rf[-train_idx, ]
 
 # Tune mtry (number of predictors tried at each split)
+
+err_rf <- numeric(8)
 mtry_vals <- 1:8
-mse_rf <- numeric(8)
 
 for (m in mtry_vals) {
   rf_mod <- randomForest(G3 ~ ., data = train_rf, mtry = m, ntree = 500)
   pred <- predict(rf_mod, test_rf)
-  mse_rf[m] <- mean((pred - test_rf$G3)^2)
+  err_rf[m] <- mean(pred != test_rf$G3)
 }
-
-best_mtry <- which.min(mse_rf)
+best_mtry <- which.min(err_rf)
 best_mtry
-mse_rf[best_mtry]
+1 - err_rf[best_mtry]  # accuracy
 
 # Final model with best mtry
 rf_final <- randomForest(G3 ~ ., data = train_rf, mtry = best_mtry, ntree = 500, importance = TRUE)
@@ -47,8 +53,7 @@ rf_final <- randomForest(G3 ~ ., data = train_rf, mtry = best_mtry, ntree = 500,
 varImpPlot(rf_final, main = "Random Forest - Variable Importance")
 
 # Plot MSE vs mtry
-plot(mtry_vals, mse_rf, type = "b", xlab = "mtry", ylab = "Test MSE",
-     main = "Random Forest - Test MSE vs mtry")
-abline(v = best_mtry, col = "red", lty = 2)
+plot(mtry_vals, err_rf, type = "b", xlab = "mtry", ylab = "Test Error Rate",
+     main = "Random Forest - Test Error Rate vs mtry")
 ```
-The random forest model achieved its best performance at mtry = 2 with a test MSE of 7.03, making it the strongest model so far. Variable importance plots confirm that failures is by far the most influential predictor, followed by higher education aspiration, consistent with findings from the stepwise models.
+Best mtry is 3 with a test accuracy of 88.5%, greater than both KNN and logistic regression. This suggests the approach of Random Forest, which reduces variance by averaging across trees, is best suited for capturing the complex interactions between these student background predictors and pass/fail outcomes.
