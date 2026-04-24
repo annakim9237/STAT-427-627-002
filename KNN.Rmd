@@ -11,17 +11,23 @@ student <- read.csv("./student/student-por.csv", sep = ";")
 
 
 ```{r}
-library(FNN)
+library(class)
+set.seed(321)
 
-# same predictors as BIC model 
-predictors <- c("school", "Fedu", "studytime", "failures", "schoolsup", 
-                "higher", "Dalc", "health")
+# same predictors as AIC model 
+predictors <- c("school", "failures", "higher", "sex", "absences",
+                "guardian", "paid", "Fedu")
+
+df_knn <- student[, c(predictors, "G3")]
 
 # Encode factors as numeric
-df_knn <- student[, c(predictors, "G3")]
-df_knn$school <- ifelse(df_knn$school == "GP", 0, 1)
-df_knn$schoolsup <- ifelse(df_knn$schoolsup == "yes", 1, 0)
-df_knn$higher <- ifelse(df_knn$higher == "yes", 1, 0)
+df_knn$school   <- ifelse(df_knn$school == "MS", 1, 0)
+df_knn$higher   <- ifelse(df_knn$higher == "yes", 1, 0)
+df_knn$sex      <- ifelse(df_knn$sex == "M", 1, 0)
+df_knn$paid     <- ifelse(df_knn$paid == "yes", 1, 0)
+df_knn$guardian <- ifelse(df_knn$guardian == "mother", 1,
+                   ifelse(df_knn$guardian == "other", 2, 0))  # father=0, mother=1, other=2
+df_knn$G3 <- ifelse(df_knn$G3 >= 10, 1, 0)
 df_knn <- na.omit(df_knn)
 
 nrow(df_knn)
@@ -45,21 +51,21 @@ test_Y  <- test$G3
 
 # Find optimal K
 K <- 1:50
-mse_vals <- numeric(50)
+err_vals <- numeric(50)
+
 for (k in K) {
-  pred <- knn.reg(train_X, test_X, train_Y, k = k)$pred
-  mse_vals[k] <- mean((pred - test_Y)^2)
+  pred <- knn(train_X, test_X, train_Y, k = k)
+  err_vals[k] <- mean(pred != test_Y)
 }
 
-best_k <- which.min(mse_vals)
+best_k <- which.min(err_vals)
 best_k
-mse_vals[best_k]
+1 - err_vals[best_k]
 
-plot(K, mse_vals, type = "b", xlab = "K", ylab = "Test MSE",
-     main = "KNN Regression - Test MSE vs K")
-abline(v = best_k, col = "red", lty = 2)
+plot(K, err_vals, type = "b", xlab = "K", ylab = "Test Error Rate",
+     main = "KNN Classification - Test Error Rate vs K")
 ```
-The KNN regression model with optimal K = 24 achieved a test MSE of 7.25, indicating an average prediction error of approximately 2.69 grade points on the 0–20 scale. The relatively large optimal K suggests that G3 is best predicted by smoothing across many neighbors, implying a gradual rather than abrupt relationship between the selected predictors and final Portuguese grade.
+The best K is 23 with a test accuracy of 86.2%.. This represents a notable improvement over logistic regression's 73.3% accuracy, suggesting that the structure of KNN better captures the relationships between these predictors and student pass/fail outcomes.
 
 
 
