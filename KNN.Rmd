@@ -27,14 +27,14 @@ df_knn$sex      <- ifelse(df_knn$sex == "M", 1, 0)
 df_knn$paid     <- ifelse(df_knn$paid == "yes", 1, 0)
 df_knn$guardian <- ifelse(df_knn$guardian == "mother", 1,
                    ifelse(df_knn$guardian == "other", 2, 0))  # father=0, mother=1, other=2
-df_knn$G3 <- ifelse(df_knn$G3 >= 10, 1, 0)
+df_knn$G3 <- ifelse(df_knn$G3 >= 12, 1, 0)
 df_knn <- na.omit(df_knn)
 
 nrow(df_knn)
 
-# Train/test split (80/20)
+# Train/test split (70/30)
 set.seed(1)
-train_idx <- sample(1:nrow(df_knn), 0.8 * nrow(df_knn))
+train_idx <- sample(1:nrow(df_knn), 0.7 * nrow(df_knn))
 train <- df_knn[train_idx, ]
 test  <- df_knn[-train_idx, ]
 
@@ -65,7 +65,7 @@ best_k
 plot(K, err_vals, type = "b", xlab = "K", ylab = "Test Error Rate",
      main = "KNN Classification - Test Error Rate vs K")
 ```
-The best K is 23 with a test accuracy of 86.2%.. This represents a notable improvement over logistic regression's 73.3% accuracy, suggesting that the structure of KNN better captures the relationships between these predictors and student pass/fail outcomes.
+The best K is 25 with a test accuracy of 74.9%. This represents an improvement over logistic regression's 73.3% accuracy, suggesting that the structure of KNN better captures the relationships between these predictors and student pass/fail outcomes.
 
 
 

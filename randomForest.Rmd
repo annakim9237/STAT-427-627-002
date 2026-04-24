@@ -25,10 +25,10 @@ df_rf$sex      <- ifelse(df_rf$sex == "M", 1, 0)
 df_rf$paid     <- ifelse(df_rf$paid == "yes", 1, 0)
 df_rf$guardian <- ifelse(df_rf$guardian == "mother", 1,
                   ifelse(df_rf$guardian == "other", 2, 0))
-df_rf$G3       <- ifelse(df_rf$G3 >= 10, 1, 0)
+df_rf$G3       <- ifelse(df_rf$G3 >= 12, 1, 0)
 df_rf$G3 <- as.factor(df_rf$G3)
 
-train_idx <- sample(1:nrow(df_rf), 0.8 * nrow(df_rf))
+train_idx <- sample(1:nrow(df_rf), 0.7 * nrow(df_rf))
 train_rf <- df_rf[train_idx, ]
 test_rf  <- df_rf[-train_idx, ]
 
@@ -56,4 +56,4 @@ varImpPlot(rf_final, main = "Random Forest - Variable Importance")
 plot(mtry_vals, err_rf, type = "b", xlab = "mtry", ylab = "Test Error Rate",
      main = "Random Forest - Test Error Rate vs mtry")
 ```
-Best mtry is 3 with a test accuracy of 88.5%, greater than both KNN and logistic regression. This suggests the approach of Random Forest, which reduces variance by averaging across trees, is best suited for capturing the complex interactions between these student background predictors and pass/fail outcomes.
+Best mtry is 3 with a test accuracy of 72.3%, less than all other methods. This suggests the approach of Random Forest, which reduces variance by averaging across trees, is least suited for capturing the complex interactions between these student background predictors and pass/fail outcomes.
