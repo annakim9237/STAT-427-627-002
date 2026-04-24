@@ -1,0 +1,74 @@
+---
+title: "KNN"
+author: "Aditya Kataria"
+date: "2026-04-18"
+output: html_document
+---
+
+```{r}
+student <- read.csv("./student/student-por.csv", sep = ";")
+```
+
+
+```{r}
+library(class)
+set.seed(321)
+
+# same predictors as AIC model 
+predictors <- c("school", "failures", "higher", "sex", "absences",
+                "guardian", "paid", "Fedu")
+
+df_knn <- student[, c(predictors, "G3")]
+
+# Encode factors as numeric
+df_knn$school   <- ifelse(df_knn$school == "MS", 1, 0)
+df_knn$higher   <- ifelse(df_knn$higher == "yes", 1, 0)
+df_knn$sex      <- ifelse(df_knn$sex == "M", 1, 0)
+df_knn$paid     <- ifelse(df_knn$paid == "yes", 1, 0)
+df_knn$guardian <- ifelse(df_knn$guardian == "mother", 1,
+                   ifelse(df_knn$guardian == "other", 2, 0))  # father=0, mother=1, other=2
+df_knn$G3 <- ifelse(df_knn$G3 >= 10, 1, 0)
+df_knn <- na.omit(df_knn)
+
+nrow(df_knn)
+
+# Train/test split (80/20)
+set.seed(1)
+train_idx <- sample(1:nrow(df_knn), 0.8 * nrow(df_knn))
+train <- df_knn[train_idx, ]
+test  <- df_knn[-train_idx, ]
+
+train_scaled <- scale(train[, predictors])
+train_center <- attr(train_scaled, "scaled:center")
+train_scale  <- attr(train_scaled, "scaled:scale")
+
+train_X <- as.matrix(train_scaled)
+test_X  <- as.matrix(scale(test[, predictors],
+                            center = train_center,
+                            scale  = train_scale))
+train_Y <- train$G3
+test_Y  <- test$G3
+
+# Find optimal K
+K <- 1:50
+err_vals <- numeric(50)
+
+for (k in K) {
+  pred <- knn(train_X, test_X, train_Y, k = k)
+  err_vals[k] <- mean(pred != test_Y)
+}
+
+best_k <- which.min(err_vals)
+best_k
+1 - err_vals[best_k]
+
+plot(K, err_vals, type = "b", xlab = "K", ylab = "Test Error Rate",
+     main = "KNN Classification - Test Error Rate vs K")
+```
+The best K is 23 with a test accuracy of 86.2%.. This represents a notable improvement over logistic regression's 73.3% accuracy, suggesting that the structure of KNN better captures the relationships between these predictors and student pass/fail outcomes.
+
+
+
+
+
+
