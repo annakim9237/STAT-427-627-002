@@ -14,19 +14,11 @@ library(randomForest)
 set.seed(321)
 
 # Use same predictors for consistency
-predictors <- c("school", "failures", "higher", "sex", "absences",
-                "guardian", "paid", "Fedu")
+predictors <- c("failures", "higher", "Fedu", "sex", "school", "absences", "Mjob", "schoolsup", "activities", "Dalc", "age", "health", "famrel", "famsup")
 
 df_rf <- student[, c(predictors, "G3")]
 
-df_rf$school   <- ifelse(df_rf$school == "MS", 1, 0)
-df_rf$higher   <- ifelse(df_rf$higher == "yes", 1, 0)
-df_rf$sex      <- ifelse(df_rf$sex == "M", 1, 0)
-df_rf$paid     <- ifelse(df_rf$paid == "yes", 1, 0)
-df_rf$guardian <- ifelse(df_rf$guardian == "mother", 1,
-                  ifelse(df_rf$guardian == "other", 2, 0))
-df_rf$G3       <- ifelse(df_rf$G3 >= 12, 1, 0)
-df_rf$G3 <- as.factor(df_rf$G3)
+df_rf$G3 <- as.factor(ifelse(df_rf$G3 >= 12, 1, 0))
 
 train_idx <- sample(1:nrow(df_rf), 0.7 * nrow(df_rf))
 train_rf <- df_rf[train_idx, ]
