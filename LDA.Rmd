@@ -1,0 +1,57 @@
+---
+title: "LDA"
+author: "Anna Hyunjung Kim"
+date: "2026-04-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+student <- read.csv("./student/student-por.csv", header = TRUE, sep = ";")
+head(student, 2)
+```
+
+```{r}
+student <- student[, !(names(student) %in% c("G1", "G2"))]
+head(student, 2)
+
+names(student)
+```
+
+```{r}
+student$pass <- ifelse(student$G3 >= 12, 1, 0)
+student$pass <- as.factor(student$pass)
+```
+
+```{r}
+set.seed(321)
+train_index <- sample(1:nrow(student), 0.7 * nrow(student))
+train <- student[train_index, ]
+test <- student[-train_index, ]
+```
+
+```{r}
+library(MASS)
+```
+
+
+```{r}
+lda_model <- lda(pass ~ . - G3, data = train)
+
+lda_pred <- predict(lda_model, test)$class
+
+mean(lda_pred == test$pass)
+```
+
+```{r}
+lda_model
+```
+
+
+```{r}
+table(Predicted = lda_pred, Actual = test$pass)
+```
+

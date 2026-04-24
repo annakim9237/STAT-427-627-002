@@ -9,11 +9,11 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Aditya Kataria" />
+<meta name="author" content="Anna Hyunjung Kim" />
 
-<meta name="date" content="2026-04-08" />
+<meta name="date" content="2026-04-21" />
 
-<title>FinalProject</title>
+<title>LDA</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -350,247 +350,136 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">FinalProject</h1>
-<h4 class="author">Aditya Kataria</h4>
-<h4 class="date">2026-04-08</h4>
+<h1 class="title toc-ignore">LDA</h1>
+<h4 class="author">Anna Hyunjung Kim</h4>
+<h4 class="date">2026-04-21</h4>
 
 </div>
 
 
-<pre class="r"><code>library(tidyverse)</code></pre>
-<pre><code>## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
-## ✔ dplyr     1.1.4     ✔ readr     2.1.5
-## ✔ forcats   1.0.0     ✔ stringr   1.5.1
-## ✔ ggplot2   3.5.1     ✔ tibble    3.2.1
-## ✔ lubridate 1.9.4     ✔ tidyr     1.3.1
-## ✔ purrr     1.0.2     
-## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-## ✖ dplyr::filter() masks stats::filter()
-## ✖ dplyr::lag()    masks stats::lag()
-## ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
-<pre class="r"><code>library(MASS)</code></pre>
-<pre><code>## 
-## Attaching package: &#39;MASS&#39;
-## 
-## The following object is masked from &#39;package:dplyr&#39;:
-## 
-##     select</code></pre>
-<div id="load-data" class="section level1">
-<h1>load data</h1>
-<pre class="r"><code>student &lt;- read.csv(&quot;./student/student-por.csv&quot;, header = TRUE, sep = &quot;;&quot;)</code></pre>
-</div>
-<div id="overview-of-data" class="section level1">
-<h1>overview of data</h1>
-<pre class="r"><code>head(student)</code></pre>
-<pre><code>##   school sex age address famsize Pstatus Medu Fedu     Mjob     Fjob     reason
-## 1     GP   F  18       U     GT3       A    4    4  at_home  teacher     course
-## 2     GP   F  17       U     GT3       T    1    1  at_home    other     course
-## 3     GP   F  15       U     LE3       T    1    1  at_home    other      other
-## 4     GP   F  15       U     GT3       T    4    2   health services       home
-## 5     GP   F  16       U     GT3       T    3    3    other    other       home
-## 6     GP   M  16       U     LE3       T    4    3 services    other reputation
+<pre class="r"><code>student &lt;- read.csv(&quot;./student/student-por.csv&quot;, header = TRUE, sep = &quot;;&quot;)
+head(student, 2)</code></pre>
+<pre><code>##   school sex age address famsize Pstatus Medu Fedu    Mjob    Fjob reason
+## 1     GP   F  18       U     GT3       A    4    4 at_home teacher course
+## 2     GP   F  17       U     GT3       T    1    1 at_home   other course
 ##   guardian traveltime studytime failures schoolsup famsup paid activities
 ## 1   mother          2         2        0       yes     no   no         no
 ## 2   father          1         2        0        no    yes   no         no
-## 3   mother          1         2        0       yes     no   no         no
-## 4   mother          1         3        0        no    yes   no        yes
-## 5   father          1         2        0        no    yes   no         no
-## 6   mother          1         2        0        no    yes   no        yes
 ##   nursery higher internet romantic famrel freetime goout Dalc Walc health
 ## 1     yes    yes       no       no      4        3     4    1    1      3
 ## 2      no    yes      yes       no      5        3     3    1    1      3
-## 3     yes    yes      yes       no      4        3     2    2    3      3
-## 4     yes    yes      yes      yes      3        2     2    1    1      5
-## 5     yes    yes       no       no      4        3     2    1    2      5
-## 6     yes    yes      yes       no      5        4     2    1    2      5
 ##   absences G1 G2 G3
 ## 1        4  0 11 11
-## 2        2  9 11 11
-## 3        6 12 13 12
-## 4        0 14 14 14
-## 5        0 11 13 13
-## 6        6 12 12 13</code></pre>
-<pre class="r"><code>str(student)</code></pre>
-<pre><code>## &#39;data.frame&#39;:    649 obs. of  33 variables:
-##  $ school    : chr  &quot;GP&quot; &quot;GP&quot; &quot;GP&quot; &quot;GP&quot; ...
-##  $ sex       : chr  &quot;F&quot; &quot;F&quot; &quot;F&quot; &quot;F&quot; ...
-##  $ age       : int  18 17 15 15 16 16 16 17 15 15 ...
-##  $ address   : chr  &quot;U&quot; &quot;U&quot; &quot;U&quot; &quot;U&quot; ...
-##  $ famsize   : chr  &quot;GT3&quot; &quot;GT3&quot; &quot;LE3&quot; &quot;GT3&quot; ...
-##  $ Pstatus   : chr  &quot;A&quot; &quot;T&quot; &quot;T&quot; &quot;T&quot; ...
-##  $ Medu      : int  4 1 1 4 3 4 2 4 3 3 ...
-##  $ Fedu      : int  4 1 1 2 3 3 2 4 2 4 ...
-##  $ Mjob      : chr  &quot;at_home&quot; &quot;at_home&quot; &quot;at_home&quot; &quot;health&quot; ...
-##  $ Fjob      : chr  &quot;teacher&quot; &quot;other&quot; &quot;other&quot; &quot;services&quot; ...
-##  $ reason    : chr  &quot;course&quot; &quot;course&quot; &quot;other&quot; &quot;home&quot; ...
-##  $ guardian  : chr  &quot;mother&quot; &quot;father&quot; &quot;mother&quot; &quot;mother&quot; ...
-##  $ traveltime: int  2 1 1 1 1 1 1 2 1 1 ...
-##  $ studytime : int  2 2 2 3 2 2 2 2 2 2 ...
-##  $ failures  : int  0 0 0 0 0 0 0 0 0 0 ...
-##  $ schoolsup : chr  &quot;yes&quot; &quot;no&quot; &quot;yes&quot; &quot;no&quot; ...
-##  $ famsup    : chr  &quot;no&quot; &quot;yes&quot; &quot;no&quot; &quot;yes&quot; ...
-##  $ paid      : chr  &quot;no&quot; &quot;no&quot; &quot;no&quot; &quot;no&quot; ...
-##  $ activities: chr  &quot;no&quot; &quot;no&quot; &quot;no&quot; &quot;yes&quot; ...
-##  $ nursery   : chr  &quot;yes&quot; &quot;no&quot; &quot;yes&quot; &quot;yes&quot; ...
-##  $ higher    : chr  &quot;yes&quot; &quot;yes&quot; &quot;yes&quot; &quot;yes&quot; ...
-##  $ internet  : chr  &quot;no&quot; &quot;yes&quot; &quot;yes&quot; &quot;yes&quot; ...
-##  $ romantic  : chr  &quot;no&quot; &quot;no&quot; &quot;no&quot; &quot;yes&quot; ...
-##  $ famrel    : int  4 5 4 3 4 5 4 4 4 5 ...
-##  $ freetime  : int  3 3 3 2 3 4 4 1 2 5 ...
-##  $ goout     : int  4 3 2 2 2 2 4 4 2 1 ...
-##  $ Dalc      : int  1 1 2 1 1 1 1 1 1 1 ...
-##  $ Walc      : int  1 1 3 1 2 2 1 1 1 1 ...
-##  $ health    : int  3 3 3 5 5 5 3 1 1 5 ...
-##  $ absences  : int  4 2 6 0 0 6 0 2 0 0 ...
-##  $ G1        : int  0 9 12 14 11 12 13 10 15 12 ...
-##  $ G2        : int  11 11 13 14 13 12 12 13 16 12 ...
-##  $ G3        : int  11 11 12 14 13 13 13 13 17 13 ...</code></pre>
-<pre class="r"><code>dim(student) </code></pre>
-<pre><code>## [1] 649  33</code></pre>
-</div>
-<div id="convert-characters-to-factors" class="section level1">
-<h1>convert characters to factors</h1>
-<pre class="r"><code>student[sapply(student, is.character)] &lt;- lapply(student[sapply(student, is.character)], as.factor)</code></pre>
-</div>
-<div id="logistic-regression" class="section level1">
-<h1>Logistic regression</h1>
-<pre class="r"><code># Full model
-full_model &lt;- lm(G3 ~ . - G1 - G2, data = student)
+## 2        2  9 11 11</code></pre>
+<pre class="r"><code>student &lt;- student[, !(names(student) %in% c(&quot;G1&quot;, &quot;G2&quot;))]
+head(student, 2)</code></pre>
+<pre><code>##   school sex age address famsize Pstatus Medu Fedu    Mjob    Fjob reason
+## 1     GP   F  18       U     GT3       A    4    4 at_home teacher course
+## 2     GP   F  17       U     GT3       T    1    1 at_home   other course
+##   guardian traveltime studytime failures schoolsup famsup paid activities
+## 1   mother          2         2        0       yes     no   no         no
+## 2   father          1         2        0        no    yes   no         no
+##   nursery higher internet romantic famrel freetime goout Dalc Walc health
+## 1     yes    yes       no       no      4        3     4    1    1      3
+## 2      no    yes      yes       no      5        3     3    1    1      3
+##   absences G3
+## 1        4 11
+## 2        2 11</code></pre>
+<pre class="r"><code>names(student)</code></pre>
+<pre><code>##  [1] &quot;school&quot;     &quot;sex&quot;        &quot;age&quot;        &quot;address&quot;    &quot;famsize&quot;   
+##  [6] &quot;Pstatus&quot;    &quot;Medu&quot;       &quot;Fedu&quot;       &quot;Mjob&quot;       &quot;Fjob&quot;      
+## [11] &quot;reason&quot;     &quot;guardian&quot;   &quot;traveltime&quot; &quot;studytime&quot;  &quot;failures&quot;  
+## [16] &quot;schoolsup&quot;  &quot;famsup&quot;     &quot;paid&quot;       &quot;activities&quot; &quot;nursery&quot;   
+## [21] &quot;higher&quot;     &quot;internet&quot;   &quot;romantic&quot;   &quot;famrel&quot;     &quot;freetime&quot;  
+## [26] &quot;goout&quot;      &quot;Dalc&quot;       &quot;Walc&quot;       &quot;health&quot;     &quot;absences&quot;  
+## [31] &quot;G3&quot;</code></pre>
+<pre class="r"><code>student$pass &lt;- ifelse(student$G3 &gt;= 12, 1, 0)
+student$pass &lt;- as.factor(student$pass)</code></pre>
+<pre class="r"><code>set.seed(321)
+train_index &lt;- sample(1:nrow(student), 0.7 * nrow(student))
+train &lt;- student[train_index, ]
+test &lt;- student[-train_index, ]</code></pre>
+<pre class="r"><code>library(MASS)</code></pre>
+<pre class="r"><code>lda_model &lt;- lda(pass ~ . - G3, data = train)
 
-# Null model 
-null_model &lt;- lm(G3 ~ 1, data = student)
+lda_pred &lt;- predict(lda_model, test)$class
 
-# AIC stepwise
-step_aic &lt;- stepAIC(full_model, direction = &quot;both&quot;, trace = FALSE)
-summary(step_aic)</code></pre>
-<pre><code>## 
-## Call:
-## lm(formula = G3 ~ school + sex + age + Medu + guardian + studytime + 
-##     failures + schoolsup + higher + romantic + Dalc + health + 
-##     absences, data = student)
+mean(lda_pred == test$pass)</code></pre>
+<pre><code>## [1] 0.7282051</code></pre>
+<pre class="r"><code>lda_model</code></pre>
+<pre><code>## Call:
+## lda(pass ~ . - G3, data = train)
 ## 
-## Residuals:
-##      Min       1Q   Median       3Q      Max 
-## -12.1548  -1.3687   0.0072   1.5292   7.2845 
+## Prior probabilities of groups:
+##         0         1 
+## 0.4647577 0.5352423 
 ## 
-## Coefficients:
-##                Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)     8.90516    1.75710   5.068 5.28e-07 ***
-## schoolMS       -1.51318    0.24021  -6.299 5.59e-10 ***
-## sexM           -0.57091    0.23574  -2.422 0.015726 *  
-## age             0.16711    0.09910   1.686 0.092231 .  
-## Medu            0.30127    0.09906   3.041 0.002454 ** 
-## guardianmother -0.45308    0.25282  -1.792 0.073592 .  
-## guardianother   0.03407    0.51153   0.067 0.946911    
-## studytime       0.40872    0.13508   3.026 0.002580 ** 
-## failures       -1.48437    0.19764  -7.511 2.01e-13 ***
-## schoolsupyes   -1.33575    0.35655  -3.746 0.000196 ***
-## higheryes       1.86377    0.37726   4.940 9.99e-07 ***
-## romanticyes    -0.42199    0.22456  -1.879 0.060679 .  
-## Dalc           -0.35842    0.12260  -2.924 0.003584 ** 
-## health         -0.17961    0.07351  -2.443 0.014826 *  
-## absences       -0.03687    0.02412  -1.529 0.126848    
-## ---
-## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## Group means:
+##    schoolMS      sexM      age  addressU famsizeLE3  PstatusT     Medu     Fedu
+## 0 0.4786730 0.4928910 16.90521 0.6398104  0.3270142 0.8672986 2.156398 1.947867
+## 1 0.2469136 0.3374486 16.70782 0.7530864  0.3045267 0.8724280 2.794239 2.572016
+##   Mjobhealth Mjobother Mjobservices Mjobteacher Fjobhealth Fjobother
+## 0 0.05213270 0.3933649    0.1990521  0.03791469 0.02369668 0.5497630
+## 1 0.08641975 0.3950617    0.2139918  0.16460905 0.02880658 0.5925926
+##   Fjobservices Fjobteacher reasonhome reasonother reasonreputation
+## 0    0.3127962  0.01895735  0.2227488  0.14691943        0.1611374
+## 1    0.2427984  0.08230453  0.2345679  0.08641975        0.2962963
+##   guardianmother guardianother traveltime studytime   failures schoolsupyes
+## 0      0.7156398    0.08056872   1.639810  1.772512 0.43601896   0.10900474
+## 1      0.7037037    0.02880658   1.440329  2.069959 0.02880658   0.09876543
+##   famsupyes    paidyes activitiesyes nurseryyes higheryes internetyes
+## 0 0.6066351 0.06635071     0.3981043  0.7582938 0.8009479   0.7109005
+## 1 0.5925926 0.04526749     0.5185185  0.8312757 0.9876543   0.8230453
+##   romanticyes   famrel freetime    goout     Dalc     Walc   health absences
+## 0   0.4028436 3.829384 3.222749 3.265403 1.672986 2.492891 3.630332 4.620853
+## 1   0.3580247 4.004115 3.045267 3.098765 1.333333 2.106996 3.403292 2.753086
 ## 
-## Residual standard error: 2.666 on 634 degrees of freedom
-## Multiple R-squared:  0.3339, Adjusted R-squared:  0.3192 
-## F-statistic:  22.7 on 14 and 634 DF,  p-value: &lt; 2.2e-16</code></pre>
-<pre class="r"><code># BIC stepwise
-step_bic &lt;- stepAIC(full_model, direction = &quot;both&quot;, k = log(nrow(student)), trace = FALSE)
-summary(step_bic)</code></pre>
-<pre><code>## 
-## Call:
-## lm(formula = G3 ~ school + Fedu + studytime + failures + schoolsup + 
-##     higher + Dalc + health, data = student)
-## 
-## Residuals:
-##      Min       1Q   Median       3Q      Max 
-## -11.8559  -1.4641  -0.0393   1.5465   8.2112 
-## 
-## Coefficients:
-##              Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  10.95769    0.58248  18.812  &lt; 2e-16 ***
-## schoolMS     -1.40590    0.23119  -6.081 2.05e-09 ***
-## Fedu          0.26741    0.10028   2.667 0.007856 ** 
-## studytime     0.51961    0.13227   3.928 9.48e-05 ***
-## failures     -1.44014    0.19014  -7.574 1.27e-13 ***
-## schoolsupyes -1.29240    0.34909  -3.702 0.000232 ***
-## higheryes     1.83601    0.37146   4.943 9.85e-07 ***
-## Dalc         -0.43157    0.11642  -3.707 0.000228 ***
-## health       -0.20350    0.07354  -2.767 0.005816 ** 
-## ---
-## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
-## 
-## Residual standard error: 2.688 on 640 degrees of freedom
-## Multiple R-squared:  0.3163, Adjusted R-squared:  0.3077 
-## F-statistic: 37.01 on 8 and 640 DF,  p-value: &lt; 2.2e-16</code></pre>
-<pre class="r"><code># Compare number of predictors selected
-length(coef(step_aic)) - 1  # AIC selected predictors</code></pre>
-<pre><code>## [1] 14</code></pre>
-<pre class="r"><code>length(coef(step_bic)) - 1  # BIC selected predictors</code></pre>
-<pre><code>## [1] 8</code></pre>
-<pre class="r"><code># Compare AIC and BIC values
-AIC(step_aic)</code></pre>
-<pre><code>## [1] 3131.189</code></pre>
-<pre class="r"><code>BIC(step_bic)</code></pre>
-<pre><code>## [1] 3180.928</code></pre>
-<p>To perform variable selection, stepwise regression was applied in
-both directions (forward and backward) using AIC and BIC as selection
-criteria on a model predicting Portuguese final grade (G3) from all
-available predictors excluding prior period grades G1 and G2. BIC
-applies a heavier penalty for model complexity, so it tends to produce
-more sparse models.</p>
-<p>The AIC-selected model retained 14 predictors: school, sex, age,
-mother’s education (Medu), guardian, study time, failures, school
-support, higher education aspiration, romantic relationship, weekday
-alcohol consumption (Dalc), health, and absences. The BIC-selected model
-retained 8 predictors: school, father’s education (Fedu), study time,
-failures, school support, higher education aspiration, Dalc, and health.
-Both models were statistically significant (p &lt; 2.2e-16).</p>
-<p>The most substantive predictors in both models were past failures (B
-= -1.48, p &lt; 0.001), which reduced G3 by nearly 1.5 points per
-failure, and higher education aspiration (B = +1.86, p &lt; 0.001),
-which shows that motivation has a strong effect on grades. Students at
-MS school scored approximately 1.5 points lower than GP students. School
-support showed a negative coefficient (B = -1.33), which reflects
-selection bias: struggling students are more likely to receive extra
-support. Parental education (Medu in AIC, Fedu in BIC) had a modest
-positive effect, and weekday alcohol consumption (Dalc) negatively
-impacted performance in both models.</p>
-</div>
-<div id="cross-validation" class="section level1">
-<h1>cross validation</h1>
-<pre class="r"><code>library(boot)
-
-# AIC model
-aic_model &lt;- glm(G3 ~ school + sex + age + Medu + guardian + studytime + 
-                   failures + schoolsup + higher + romantic + Dalc + health + 
-                   absences, data = student)
-
-# BIC model
-bic_model &lt;- glm(G3 ~ school + Fedu + studytime + failures + schoolsup + 
-                   higher + Dalc + health, data = student)
-
-# 10-fold CV for both
-set.seed(42)
-cv_aic &lt;- cv.glm(student, aic_model, K = 10)
-cv_bic &lt;- cv.glm(student, bic_model, K = 10)
-
-# CV MSE
-cv_aic$delta[1]  # AIC model CV MSE</code></pre>
-<pre><code>## [1] 7.422957</code></pre>
-<pre class="r"><code>cv_bic$delta[1]  # BIC model CV MSE</code></pre>
-<pre><code>## [1] 7.400469</code></pre>
-<p>10-fold cross-validation yielded a CV MSE of 7.42 for the AIC model
-and 7.40 for the BIC model, corresponding to average prediction errors
-of approximately 2.72 grade points on the 0–20 scale. Despite using 6
-fewer predictors, the BIC model matched the AIC model’s out-of-sample
-accuracy, making it the preferred stepwise result on grounds of
-parsimony. Both models explain approximately 31-33% of variance in G3,
-which is expected for a purely demographic and behavioral model without
-prior grade information.</p>
-</div>
+## Coefficients of linear discriminants:
+##                          LD1
+## schoolMS         -0.70496287
+## sexM             -0.85922896
+## age               0.11676544
+## addressU          0.11289988
+## famsizeLE3       -0.02622804
+## PstatusT         -0.09326319
+## Medu              0.01592426
+## Fedu              0.30260853
+## Mjobhealth        0.74978859
+## Mjobother         0.57897643
+## Mjobservices      0.57724810
+## Mjobteacher       1.23097002
+## Fjobhealth       -0.42665756
+## Fjobother        -0.04626587
+## Fjobservices     -0.61265832
+## Fjobteacher      -0.14191282
+## reasonhome        0.04947046
+## reasonother      -0.10060613
+## reasonreputation  0.04705870
+## guardianmother   -0.25406697
+## guardianother     0.23749065
+## traveltime       -0.04900087
+## studytime         0.07032729
+## failures         -0.61924433
+## schoolsupyes     -0.49940635
+## famsupyes        -0.25009839
+## paidyes          -0.31249324
+## activitiesyes     0.33641521
+## nurseryyes        0.16193610
+## higheryes         1.08409588
+## internetyes       0.09950293
+## romanticyes      -0.01485322
+## famrel            0.21973656
+## freetime         -0.07319224
+## goout            -0.07186914
+## Dalc             -0.13549815
+## Walc              0.03797993
+## health           -0.11863163
+## absences         -0.08187939</code></pre>
+<pre class="r"><code>table(Predicted = lda_pred, Actual = test$pass)</code></pre>
+<pre><code>##          Actual
+## Predicted  0  1
+##         0 60 23
+##         1 30 82</code></pre>
 
 
 
