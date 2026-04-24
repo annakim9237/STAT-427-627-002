@@ -1,0 +1,51 @@
+---
+title: "randomForest"
+author: "Aditya Kataria"
+date: "2026-04-18"
+output: html_document
+---
+```{r}
+student <- read.csv("./student/student-por.csv", sep = ";")
+```
+
+```{r}
+library(randomForest)
+
+set.seed(321)
+
+# Use same predictors for consistency
+predictors <- c("failures", "higher", "Fedu", "sex", "school", "absences", "Mjob", "schoolsup", "activities", "Dalc", "age", "health", "famrel", "famsup")
+
+df_rf <- student[, c(predictors, "G3")]
+
+df_rf$G3 <- as.factor(ifelse(df_rf$G3 >= 12, 1, 0))
+
+train_idx <- sample(1:nrow(df_rf), 0.7 * nrow(df_rf))
+train_rf <- df_rf[train_idx, ]
+test_rf  <- df_rf[-train_idx, ]
+
+# Tune mtry (number of predictors tried at each split)
+
+err_rf <- numeric(8)
+mtry_vals <- 1:8
+
+for (m in mtry_vals) {
+  rf_mod <- randomForest(G3 ~ ., data = train_rf, mtry = m, ntree = 500)
+  pred <- predict(rf_mod, test_rf)
+  err_rf[m] <- mean(pred != test_rf$G3)
+}
+best_mtry <- which.min(err_rf)
+best_mtry
+1 - err_rf[best_mtry]  # accuracy
+
+# Final model with best mtry
+rf_final <- randomForest(G3 ~ ., data = train_rf, mtry = best_mtry, ntree = 500, importance = TRUE)
+
+# Variable importance plot
+varImpPlot(rf_final, main = "Random Forest - Variable Importance")
+
+# Plot MSE vs mtry
+plot(mtry_vals, err_rf, type = "b", xlab = "mtry", ylab = "Test Error Rate",
+     main = "Random Forest - Test Error Rate vs mtry")
+```
+Best mtry is 3 with a test accuracy of 72.3%, less than all other methods. This suggests the approach of Random Forest, which reduces variance by averaging across trees, is least suited for capturing the complex interactions between these student background predictors and pass/fail outcomes.
